@@ -1,38 +1,40 @@
-# 工作流名称
 name: 部署 index.html 到 GitHub Pages
 
-# 触发条件：推送到 main 分支时执行
 on:
   push:
-    branches: [ main ]  # 如果你的默认分支是 master，改成 master
+    branches: [ main ]  # 分支名不对就改成 master
 
-# 执行的部署任务
 jobs:
-  deploy-to-github-io:
-    runs-on: ubuntu-latest  # 运行环境
+  deploy:
+    runs-on: ubuntu-latest
     steps:
       # 第一步：拉取 test 仓库的代码（包含 index.html）
       - name: 拉取源码
         uses: actions/checkout@v4
 
-      # 第二步：查看当前目录文件（可选，用于排查文件是否存在）
-      - name: 确认 index.html 存在
+      # 第二步：确认文件存在（日志里能看到 index.html）
+      - name: 检查文件
         run: |
-          ls -la  # 会在日志中显示是否有 index.html
-          pwd     # 显示当前工作目录
+          ls -la  # 这一步会输出文件列表，确认 index.html 存在
+          echo "当前目录：$(pwd)"
 
-      # 第三步：配置 Git 身份（必须，否则无法推送代码）
-      - name: 配置 Git 用户名和邮箱
+      # 第三步：配置 Git 并推送文件到 github.io 仓库
+      - name: 推送到 github.io 仓库
+        env:
+          # 你的 PAT 令牌（存在 test 仓库的 Secrets 里，Name 是 PAT）
+          PAT: ${{ secrets.PAT }}
+          # 替换成你的 GitHub 用户名
+          USERNAME: enna7029
         run: |
-          git config --global user.name "enna7029"  # 替换成你的用户名，比如 zhangsan
-          git config --global user.email "w1069103107@outlook.com"  # 比如 zhangsan@xxx.com
-
-      # 第四步：将 index.html 推送到 github.io 仓库
-      - name: 部署到 github.io
-        uses: JamesIves/github-pages-deploy-action@v4
-        with:
-          token: ${{ secrets.PAT }}  # 对应你在 Secrets 中保存的 PAT
-          repository-name: 你的用户名/你的用户名.github.io  # 替换成 xiaoming/xiaoming.github.io
-          folder: .  # 关键：. 代表根目录，你的 index.html 就在根目录
-          branch: main  # 推送到 github.io 仓库的 main 分支
-          clean: true  # 清空 github.io 仓库原有文件，只保留 index.html
+          # 克隆 github.io 仓库到本地临时目录
+          git clone https://$USERNAME:$PAT@github.com/$USERNAME/$USERNAME.github.io.git temp-gh-pages
+          # 进入克隆的目录
+          cd temp-gh-pages
+          # 删除原有文件（避免残留）
+          rm -rf *
+          # 复制 test 仓库根目录的 index.html 到当前目录
+          cp ../index.html .
+          # 提交并推送
+          git add .
+          git commit -m "自动部署 index.html from test 仓库"
+          git push origin main
