@@ -1,0 +1,38 @@
+# 工作流名称
+name: 部署 index.html 到 GitHub Pages
+
+# 触发条件：推送到 main 分支时执行
+on:
+  push:
+    branches: [ main ]  # 如果你的默认分支是 master，改成 master
+
+# 执行的部署任务
+jobs:
+  deploy-to-github-io:
+    runs-on: ubuntu-latest  # 运行环境
+    steps:
+      # 第一步：拉取 test 仓库的代码（包含 index.html）
+      - name: 拉取源码
+        uses: actions/checkout@v4
+
+      # 第二步：查看当前目录文件（可选，用于排查文件是否存在）
+      - name: 确认 index.html 存在
+        run: |
+          ls -la  # 会在日志中显示是否有 index.html
+          pwd     # 显示当前工作目录
+
+      # 第三步：配置 Git 身份（必须，否则无法推送代码）
+      - name: 配置 Git 用户名和邮箱
+        run: |
+          git config --global user.name "enna7029"  # 替换成你的用户名，比如 zhangsan
+          git config --global user.email "w1069103107@outlook.com"  # 比如 zhangsan@xxx.com
+
+      # 第四步：将 index.html 推送到 github.io 仓库
+      - name: 部署到 github.io
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          token: ${{ secrets.PAT }}  # 对应你在 Secrets 中保存的 PAT
+          repository-name: 你的用户名/你的用户名.github.io  # 替换成 xiaoming/xiaoming.github.io
+          folder: .  # 关键：. 代表根目录，你的 index.html 就在根目录
+          branch: main  # 推送到 github.io 仓库的 main 分支
+          clean: true  # 清空 github.io 仓库原有文件，只保留 index.html
